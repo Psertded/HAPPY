@@ -28,8 +28,3 @@ It can:
 4. Show the "午夜Happy" on screen
 
 Note:This program isn't a **VIRUS**!!!Press ESC To exit.
-
----
-
-
-[Launch](HAPPY.exe)
