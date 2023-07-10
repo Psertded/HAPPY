@@ -3,21 +3,95 @@
 
 
 #include <iostream>
-#include <windows.h>
+#include <windows.h> 
+#include <mmdeviceapi.h> 
+#include <endpointvolume.h>
+#include <audioclient.h>
 #include <dshow.h>
 #include <mmsystem.h>
+#include <fstream>
 #include <sstream>
+#include <random>
 
 
 using namespace std;
+int volumemax, volumemin;
+default_random_engine dre;
 
 void setr()
 {
     srand(time(NULL) + clock() + rand());
+    dre.seed(time(NULL) + clock() + rand());
+}
+
+bool SetVolume(int volume)
+{
+    bool ret = false;
+    HRESULT hr;
+    IMMDeviceEnumerator* pDeviceEnumerator = 0;
+    IMMDevice* pDevice = 0;
+    IAudioEndpointVolume* pAudioEndpointVolume = 0;
+    IAudioClient* pAudioClient = 0;
+
+    try 
+    {
+        hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&pDeviceEnumerator);
+        if (FAILED(hr)) throw "CoCreateInstance";
+        hr = pDeviceEnumerator->GetDefaultAudioEndpoint(eRender, eMultimedia, &pDevice);
+        if (FAILED(hr)) throw "GetDefaultAudioEndpoint";
+        hr = pDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_ALL, NULL, (void**)&pAudioEndpointVolume);
+        if (FAILED(hr)) throw "pDevice->Active";
+        hr = pDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&pAudioClient);
+        if (FAILED(hr)) throw "pDevice->Active";
+
+        float fVolume;
+        fVolume = volume / 100.0f;
+        hr = pAudioEndpointVolume->SetMasterVolumeLevelScalar(fVolume, &GUID_NULL);
+        if (FAILED(hr)) throw "SetMasterVolumeLevelScalar";
+
+        pAudioClient->Release();
+        pAudioEndpointVolume->Release();
+        pDevice->Release();
+        pDeviceEnumerator->Release();
+
+        ret = true;
+    }
+    catch (...) 
+    {
+        if (pAudioClient) pAudioClient->Release();
+        if (pAudioEndpointVolume) pAudioEndpointVolume->Release();
+        if (pDevice) pDevice->Release();
+        if (pDeviceEnumerator) pDeviceEnumerator->Release();
+        throw;
+    }
+
+    return ret;
 }
 
 int main()
 {
+    struct stat buffer;
+    string buf;
+    if (!(stat(".\\volume.txt", &buffer) == 0))
+    {
+        fstream fs(".\\volume.txt", ios::out);
+        fs << "false" << endl << "0" << endl << "100";
+        fs.close();
+        return 0;
+    }
+    else
+    {
+        fstream fs(".\\volume.txt", ios::in);
+        getline(fs, buf);
+        if (buf.find("true") == string::npos)
+            return 0;
+        getline(fs, buf);
+        volumemin = stoi(buf);
+        getline(fs, buf);
+        volumemax = stoi(buf);
+        fs.close();
+    }
+    uniform_int_distribution<int>uid(volumemin, volumemax);
     HWND win = GetForegroundWindow();
     HWND hwnd = win;
     LONG style = GetWindowLong(hwnd, GWL_STYLE);
@@ -75,7 +149,7 @@ int main()
     for (int i = 0; true; i=rand()%256)
     {
         b = rand() % 8;
-
+        SetVolume(uid(dre));
         GetCursorPos(&m);
         switch (b)
         {
@@ -174,4 +248,5 @@ int main()
             GetWindowRect(win, &rect);
         }
     }
+    atexit(CoUninitialize);
 }
