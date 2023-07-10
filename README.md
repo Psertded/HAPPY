@@ -2,7 +2,7 @@
 
 # HAPPY
 
-###！注意！
+### ！注意！
 此程序会创建一个名为volume.txt的文件，第一行是填入true/false(true:运行，false:不运行)
 为了防止音量太大影响到他人。
 请自己手动改为true。
@@ -25,7 +25,7 @@
 
 # HAPPY
 
-###! Notice!
+### ! Notice!
 This program will create a file named volume.txt, the first line is filled with true/false (true: run, false: not run)
 In order to prevent the volume from being too loud to affect others.
 Please manually change it to true.
